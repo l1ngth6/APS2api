@@ -23,6 +23,32 @@ aps2api 是一个 Google Gemini API 反向代理服务，将客户端的标准 G
 
 Web 控制台地址：`http://127.0.0.1:2156/admin/`
 
+### Debian VPS 使用 Docker 镜像
+
+仓库的 GitHub Actions 会在推送到 `master`、推送 `v*` 标签或手动触发时，构建并发布镜像到 `ghcr.io/l1ngth6/aps2api`，支持 `linux/amd64` 和 `linux/arm64`。PR 仅验证构建，不发布镜像。`latest` 跟随默认分支；版本标签（如 `v1.3.0`）及 `sha-<完整提交 SHA>` 可用于固定版本。
+
+首次使用前，将工作流推送到 GitHub 并等待构建成功。发布使用内置 `GITHUB_TOKEN`（工作流已声明 `packages: write`），无需配置 Docker Hub 密钥。首次发布的 GHCR 包默认为私有：如需免登录拉取，请到 GitHub 个人主页的 **Packages → aps2api → Package settings → Change visibility** 设置为 Public。私有镜像需先在 VPS 执行 `docker login ghcr.io -u <GitHub用户名>`，密码使用具有 `read:packages` 权限的 PAT（classic）。参见 [GitHub Container Registry 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)。
+
+在已安装 Docker Engine 和 Compose 插件的 Debian VPS 上：
+
+```sh
+mkdir -p ~/aps2api && cd ~/aps2api
+curl -fsSL https://raw.githubusercontent.com/l1ngth6/APS2api/master/docker-compose.ghcr.yml -o compose.yml
+docker compose pull
+docker compose up -d
+docker compose logs --tail=100 vproxy
+```
+
+在日志中查看首次生成的管理员密码，访问 `http://<VPS-IP>:2156/admin/`。`config`（含数据库）、`logs`、`assets` 保存在当前目录。对外提供服务时可按[部署指南](部署指南.md#nginx-反向代理配置)配置 HTTPS 反向代理。
+
+更新镜像并重建容器：
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+固定版本时，在 `compose.yml` 同目录的 `.env` 中设置 `APS2API_IMAGE=ghcr.io/l1ngth6/aps2api:v1.3.0`（替换为已发布标签）。Fork 仓库请改为自己的镜像地址。本地源码构建仍可使用原有 `docker-compose.yml`。
+
 ## 客户端配置
 
 在支持 Google Gemini API 的客户端或 SDK 中配置：

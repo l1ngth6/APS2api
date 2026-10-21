@@ -1,0 +1,13 @@
+services:
+  vproxy:
+    image: ${APS2API_IMAGE:-ghcr.io/l1ngth6/aps2api:latest}
+    container_name: vproxy
+    ports:
+      - "2156:2156"
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./assets:/app/assets
+    environment:
+      - PROXY_URL=${PROXY_URL:-}
+    restart: unless-stopped

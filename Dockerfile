@@ -1,4 +1,5 @@
-FROM golang:1.26-alpine AS builder
+# Build Go natively on the runner, then cross-compile for the requested image.
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 WORKDIR /build
 
@@ -9,7 +10,9 @@ RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 
-RUN CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags="-s -w" -o vproxy ./cmd/vproxy \
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -buildvcs=false -trimpath -ldflags="-s -w" -o vproxy ./cmd/vproxy \
     && go clean -cache -modcache -testcache
 
 FROM alpine:3.20
